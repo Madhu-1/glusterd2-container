@@ -1,0 +1,64 @@
+- name: clean disks
+  command: dd if=/dev/zero of={{ item }} count=100 bs=1024k
+  with_items:
+    - /dev/vdb
+    - /dev/vdc
+    - /dev/vdd
+    - /dev/vde
+    - /dev/vdf
+    - /dev/vdg
+    - /dev/vdh
+    - /dev/vdi
+
+- name: install docker
+  yum: name={{ item }} state=present
+  with_items:
+    - docker
+
+- name: ensure docker is running
+  service: name=docker state=started enabled=true
+
+- name: copy private key
+  copy: src=insecure_private_key owner=vagrant group=vagrant dest=/home/vagrant/.ssh/id_rsa force=no mode=0600
+
+
+- name: clean iptables
+  command: iptables -F
+
+- name: disable selinux
+  selinux: state=disabled
+
+- name: pull glusterd2 image
+  become: yes
+  become_method: sudo
+  command: docker pull madhupr001/glusterd2:latest
+  retries: 5
+  delay : 1
+
+- name: create directory
+  file:
+    path: /etc/glusterd2
+    state: directory
+- name: create file
+  file:    
+    path: /etc/glusterd2/glusterd2.toml
+    state: touch
+- name: copy to file
+  copy:
+    dest: /etc/glusterd2/glusterd2.toml
+    content: |
+        localstatedir = "/var/lib/glusterd"
+        peeraddress = ":24007"
+        clientaddress = ":24007"
+
+- name: copy script
+  copy: src=script.sh owner=vagrant group=vagrant dest=/home/ mode=700
+
+- name: update ip in glusterd2.toml
+  command: sh /home/script.sh
+
+
+- name: run glusterd2 container
+  become: yes
+  become_method: sudo 
+  command: docker run -d --privileged -v /dev:/dev -v /etc/glusterd2:/etc/glusterd2 --network host madhupr001/glusterd2:latest 

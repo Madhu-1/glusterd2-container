@@ -18,6 +18,14 @@ ENV GD2_BRANCH="master"
 ENV GLUSTERFS_BRANCH="master"
 ENV GLUSTER_PATH=$BUILD_HOME/gluster
 
+RUN yum  install -y lvm2* systemd-udev dbus-python nfs-utils attr iputils iproute openssh-server openssh-clients cronie tar rsync sos sudo xfsprogs && \
+    sed -i.save -e "s#udev_sync = 1#udev_sync = 0#" -e "s#udev_rules = 1#udev_rules = 0#" -e "s#use_lvmetad = 1#use_lvmetad = 0#" /etc/lvm/lvm.conf && \
+    systemctl mask getty.target && \
+    systemctl disable systemd-udev-trigger.service && \
+    systemctl disable systemd-udevd.service && \
+systemctl disable nfs-server.service
+VOLUME [ "/sys/fs/cgroup" ]
+
 #glusterd2
 RUN chmod +x /setup.sh && /setup.sh &&\
     mkdir $BUILD_HOME $GOPATH $GOBIN && \
@@ -34,7 +42,7 @@ RUN chmod +x /setup.sh && /setup.sh &&\
 
 #glusterfs
 RUN mkdir $GLUSTER_PATH  &&\
-    yum install -y automake autoconf \
+    yum install -y automake autoconf userspace-rcu\
     libtool flex bison openssl-devel \
     libxml2-devel python-devel \
     libaio-devel libibverbs-devel \
