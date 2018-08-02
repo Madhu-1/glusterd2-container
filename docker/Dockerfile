@@ -84,4 +84,5 @@ RUN mkdir $GLUSTER_PATH  &&\
 
 #TODO Expose PORT required by services
 
-ENTRYPOINT [ "/usr/bin/glusterd2" ]
+CMD ["--config=/etc/glusterd2/glusterd2.toml"]
+ENTRYPOINT ["/usr/bin/glusterd2"]
